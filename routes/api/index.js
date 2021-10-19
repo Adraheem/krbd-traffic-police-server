@@ -78,6 +78,31 @@ router.post("/car", verifyAuthToken, (req, res) => {
   });
 });
 
+router.post("/cars", verifyAuthToken, (req, res) => {
+  con.getConnection((err, connection) => {
+    connection.query(
+      "SELECT slug AS plate, model, (SELECT SUM(amount) FROM offence WHERE car = car.slug AND status != 'removed' GROUP BY car) AS fine, (SELECT dateAdded FROM offence WHERE car = car.slug ORDER BY id DESC LIMIT 1) AS time FROM car ORDER BY time",
+      (err, result) => {
+        return res.status(200).json(result);
+      }
+    );
+    connection.release();
+  });
+});
+
+router.post("/car/search", verifyAuthToken, (req, res) => {
+  con.getConnection((err, connection) => {
+    connection.query(
+      "SELECT slug AS plate, model, (SELECT SUM(amount) FROM offence WHERE car = car.slug AND status != 'removed' GROUP BY car) AS fine, (SELECT dateAdded FROM offence WHERE car = car.slug ORDER BY id DESC LIMIT 1) AS time FROM car WHERE slug LIKE '%?%' OR model LIKE '%?%' OR name LIKE '%?%' OR plate LIKE '%?%' ORDER BY time",
+      [req.body.query, req.body.query, req.body.query, req.body.query],
+      (err, result) => {
+        return res.status(200).json(result);
+      }
+    );
+    connection.release();
+  });
+});
+
 router.post("/offence/add", verifyAuthToken, (req, res) => {
   const { errors, isValid } = validateAddOffence(req.body);
   if (!isValid) {
@@ -107,6 +132,20 @@ router.post("/offence/recent", verifyAuthToken, (req, res) => {
     connection.query(
       "SELECT id, car AS plate, status, reason, amount AS fine, location AS place, dateAdded AS time FROM offence WHERE car = ? ORDER BY id DESC",
       [req.body.car],
+      (err, result) => {
+        return res.status(200).json(result);
+      }
+    );
+
+    connection.release();
+  });
+});
+
+router.post("/history/search", verifyAuthToken, (req, res) => {
+  con.getConnection((err, connection) => {
+    connection.query(
+      "SELECT id, car AS plate, status, reason, amount AS fine, location AS place, dateAdded AS time FROM offence WHERE car LIKE '%?%' OR reason LIKE '%?%' OR amount LIKE '%?%' OR location LIKE '%?%' ORDER BY id DESC",
+      [req.body.query, req.body.query, req.body.query, req.body.query],
       (err, result) => {
         return res.status(200).json(result);
       }
