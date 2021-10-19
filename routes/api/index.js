@@ -116,4 +116,45 @@ router.post("/offence/recent", verifyAuthToken, (req, res) => {
   });
 });
 
+router.post("/offences", verifyAuthToken, (req, res) => {
+  con.getConnection((err, connection) => {
+    connection.query(
+      "SELECT id, car AS plate, status, reason, amount AS fine, location AS place, dateAdded AS time FROM offence ORDER BY id DESC",
+      [req.body.car],
+      (err, result) => {
+        return res.status(200).json(result);
+      }
+    );
+
+    connection.release();
+  });
+});
+
+router.post("/appeals", verifyAuthToken, (req, res) => {
+  con.getConnection((err, connection) => {
+    connection.query(
+      "SELECT appeal.id, appeal.car AS plate, appeal.reason AS content, appeal.status, appeal.dateAdded AS time, offence.reason FROM appeal LEFT JOIN offence ON offence.id = appeal.offence ORDER BY appeal.id DESC",
+      (err, result) => {
+        return res.status(200).json(result);
+      }
+    );
+
+    connection.release();
+  });
+});
+
+router.post("/appeal/add", (req, res) => {
+  con.getConnection((err, connection) => {
+    connection.query(
+      "INSERT INTO appeal (car, offence, reason, status, dateAdded) VALUES (?, ?, ?, 'pending', now())",
+      [req.body.car, req.body.offence, req.body.reason],
+      (err, result) => {
+        return res.status(200).json({ success: true });
+      }
+    );
+
+    connection.release();
+  });
+});
+
 module.exports = router;
