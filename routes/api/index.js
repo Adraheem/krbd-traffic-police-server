@@ -3,6 +3,7 @@ const con = require("../../config/connection");
 const { verifyAuthToken } = require("../../middlewares/verifyAuthToken");
 const generateSlug = require("../../utils/generateSlug");
 const validateAddCar = require("../../validation/add-car");
+const { validateAddOffence } = require("../../validation/validate");
 const router = express.Router();
 
 router.post("/car/add", verifyAuthToken, (req, res) => {
@@ -59,6 +60,58 @@ router.post("/car/add", verifyAuthToken, (req, res) => {
     connection.query(query, value, (err, result) => {
       return res.status(200).json({ success: true, slug });
     });
+    connection.release();
+  });
+});
+
+router.post("/car", verifyAuthToken, (req, res) => {
+  con.getConnection((err, connection) => {
+    connection.query(
+      "SELECT name, slug, plate, model FROM car WHERE slug = ? ",
+      [req.body.car],
+      (err, result) => {
+        return res.status(200).json(result[0]);
+      }
+    );
+
+    connection.release();
+  });
+});
+
+router.post("/offence/add", verifyAuthToken, (req, res) => {
+  const { errors, isValid } = validateAddOffence(req.body);
+  if (!isValid) {
+    return res.status(400).json(errors);
+  }
+
+  con.getConnection((err, connection) => {
+    const car = req.body.car;
+    const reason = req.body.reason;
+    const amount = req.body.amount;
+    const location = req.body.location;
+
+    connection.query(
+      "INSERT INTO offence (`car`, `status`, `reason`, `amount`, `location`, `dateAdded`) VALUES (?, 'pending', ?, ?, ?, now())",
+      [car, reason, amount, location],
+      (err, result) => {
+        return res.status(200).json({ success: true });
+      }
+    );
+
+    connection.release();
+  });
+});
+
+router.post("/offence/recent", verifyAuthToken, (req, res) => {
+  con.getConnection((err, connection) => {
+    connection.query(
+      "SELECT id, car AS plate, status, reason, amount AS fine, location AS place, dateAdded AS time FROM offence WHERE car = ? ORDER BY id DESC",
+      [req.body.car],
+      (err, result) => {
+        return res.status(200).json(result);
+      }
+    );
+
     connection.release();
   });
 });

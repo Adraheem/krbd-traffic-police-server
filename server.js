@@ -4,7 +4,8 @@ const passport = require("passport");
 const cors = require("cors");
 
 // all routes import
-const auth = require("./routes/auth/index");
+const auth = require("./routes/auth");
+const api = require("./routes/api");
 
 var compression = require("compression");
 
@@ -25,7 +26,7 @@ require("./config/passport")(passport);
 
 var corsOptions = {
   origin: [
-    "http://localhost:3000", // user test client
+    "http://localhost:3002", // user test client
   ],
   optionsSuccessStatus: 200,
   methods: "GET, POST",
@@ -34,6 +35,7 @@ app.use(cors(corsOptions));
 
 // use routes
 app.use("/auth", auth);
+app.use("/api", api);
 
 const port = process.env.PORT || 4593;
 app.listen(port, () => {
