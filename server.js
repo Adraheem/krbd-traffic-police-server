@@ -25,7 +25,7 @@ app.use(passport.initialize());
 require("./config/passport")(passport);
 
 var corsOptions = {
-  origin: process.env.clients,
+  origin: [process.env.clients],
   optionsSuccessStatus: 200,
   methods: "GET, POST",
 };
