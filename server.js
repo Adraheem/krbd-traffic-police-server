@@ -25,9 +25,7 @@ app.use(passport.initialize());
 require("./config/passport")(passport);
 
 var corsOptions = {
-  origin: [
-    "http://localhost:3002", // user test client
-  ],
+  origin: process.env.clients,
   optionsSuccessStatus: 200,
   methods: "GET, POST",
 };
