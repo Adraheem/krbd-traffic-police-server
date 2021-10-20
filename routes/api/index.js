@@ -93,8 +93,7 @@ router.post("/cars", verifyAuthToken, (req, res) => {
 router.post("/car/search", verifyAuthToken, (req, res) => {
   con.getConnection((err, connection) => {
     connection.query(
-      "SELECT slug AS plate, model, (SELECT SUM(amount) FROM offence WHERE car = car.slug AND status != 'removed' GROUP BY car) AS fine, (SELECT dateAdded FROM offence WHERE car = car.slug ORDER BY id DESC LIMIT 1) AS time FROM car WHERE slug LIKE '%?%' OR model LIKE '%?%' OR name LIKE '%?%' OR plate LIKE '%?%' ORDER BY time",
-      [req.body.query, req.body.query, req.body.query, req.body.query],
+      `SELECT slug AS plate, model, (SELECT SUM(amount) FROM offence WHERE car = car.slug AND status != 'removed' GROUP BY car) AS fine, (SELECT dateAdded FROM offence WHERE car = car.slug ORDER BY id DESC LIMIT 1) AS time FROM car WHERE slug LIKE '%${req.body.query}%' OR model LIKE '%${req.body.query}%' OR name LIKE '%${req.body.query}%' OR plate LIKE '%${req.body.query}%' ORDER BY time`,
       (err, result) => {
         return res.status(200).json(result);
       }
@@ -144,8 +143,7 @@ router.post("/offence/recent", verifyAuthToken, (req, res) => {
 router.post("/history/search", verifyAuthToken, (req, res) => {
   con.getConnection((err, connection) => {
     connection.query(
-      "SELECT id, car AS plate, status, reason, amount AS fine, location AS place, dateAdded AS time FROM offence WHERE car LIKE '%?%' OR reason LIKE '%?%' OR amount LIKE '%?%' OR location LIKE '%?%' ORDER BY id DESC",
-      [req.body.query, req.body.query, req.body.query, req.body.query],
+      `SELECT id, car AS plate, status, reason, amount AS fine, location AS place, dateAdded AS time FROM offence WHERE car LIKE '%${req.body.query}%' OR reason LIKE '%${req.body.query}%' OR amount LIKE '%${req.body.query}%' OR location LIKE '%${req.body.query}%' ORDER BY id DESC`,
       (err, result) => {
         return res.status(200).json(result);
       }
@@ -177,6 +175,18 @@ router.post("/appeals", verifyAuthToken, (req, res) => {
         return res.status(200).json(result);
       }
     );
+
+    connection.release();
+  });
+});
+
+router.post("/appeal/search", verifyAuthToken, (req, res) => {
+  con.getConnection((err, connection) => {
+    const query = `SELECT appeal.id, appeal.car AS plate, appeal.reason AS content, appeal.status, appeal.dateAdded AS time, offence.reason FROM appeal LEFT JOIN offence ON offence.id = appeal.offence WHERE appeal.car LIKE '%${req.body.query}%' OR appeal.reason LIKE '%${req.body.query}%' OR offence.reason LIKE '%${req.body.query}%' ORDER BY appeal.id DESC`;
+
+    connection.query(query, (err, result) => {
+      return res.status(200).json(result);
+    });
 
     connection.release();
   });
